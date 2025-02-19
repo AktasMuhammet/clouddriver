@@ -24,7 +24,7 @@ import com.google.api.client.http.GenericUrl
 import com.google.api.client.http.HttpHeaders
 import com.google.api.client.http.HttpResponse
 import com.google.api.client.json.JsonObjectParser
-import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.compute.Compute
 import com.google.api.services.compute.model.*
 import com.netflix.spinnaker.cats.cache.Cache
@@ -50,6 +50,7 @@ import com.netflix.spinnaker.clouddriver.google.provider.view.GoogleSubnetProvid
 import com.netflix.spinnaker.clouddriver.google.security.GoogleNamedAccountCredentials
 import com.netflix.spinnaker.config.GoogleConfiguration
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.kork.client.ServiceClientProvider
 import groovy.util.logging.Slf4j
 
 import static com.netflix.spinnaker.clouddriver.google.cache.Keys.Namespace.HEALTH_CHECKS
@@ -142,7 +143,7 @@ class GCEUtil {
       {
         return compute.getRequestFactory()
           .buildGetRequest(new GenericUrl(reference))
-          .setParser(new JsonObjectParser(JacksonFactory.getDefaultInstance()))
+          .setParser(new JsonObjectParser(GsonFactory.getDefaultInstance()))
           .execute()
       },
       "gce/image",
@@ -396,7 +397,7 @@ class GCEUtil {
       it.name in forwardingRuleNames
     }
 
-    if (foundForwardingRules.size == forwardingRuleNames.size) {
+    if (foundForwardingRules.size() == forwardingRuleNames.size()) {
       return foundForwardingRules
     } else {
       def foundNames = foundForwardingRules.collect { it.name }
@@ -448,7 +449,7 @@ class GCEUtil {
       }
     }.flatten() - null
 
-    if (foundInstances.size == instanceLocalNames.size) {
+    if (foundInstances.size() == instanceLocalNames.size()) {
       return foundInstances.collect { it.selfLink }
     } else {
       def foundNames = foundInstances.collect { it.name }
@@ -605,9 +606,9 @@ class GCEUtil {
         "$instanceTemplate.name.")
     }
 
-    if (instanceTemplateProperties.networkInterfaces?.size != 1) {
+    if (instanceTemplateProperties.networkInterfaces?.size() != 1) {
       throw new GoogleOperationException("Instance templates must have exactly one network interface defined. " +
-        "Instance template $instanceTemplate.name has ${instanceTemplateProperties.networkInterfaces?.size}.")
+        "Instance template $instanceTemplate.name has ${instanceTemplateProperties.networkInterfaces?.size()}.")
     }
 
     def image
@@ -627,7 +628,7 @@ class GCEUtil {
       }
     } else {
       throw new GoogleOperationException("Instance templates must have at least one disk defined. Instance template " +
-        "$instanceTemplate.name has ${instanceTemplateProperties.disks?.size}.")
+        "$instanceTemplate.name has ${instanceTemplateProperties.disks?.size()}.")
     }
 
     def networkInterface = instanceTemplateProperties.networkInterfaces[0]
@@ -920,7 +921,7 @@ class GCEUtil {
       : []
   }
 
-  static ServiceAccount buildScheduling(BaseGoogleInstanceDescription description) {
+  static Scheduling buildScheduling(BaseGoogleInstanceDescription description) {
     def scheduling = new Scheduling()
 
     if (description.preemptible != null) {
@@ -2251,7 +2252,7 @@ class GCEUtil {
     return healthChecks
   }
 
-  static List<GoogleInstance> fetchInstances(GoogleExecutorTraits agent, GoogleNamedAccountCredentials credentials) {
+  static List<GoogleInstance> fetchInstances(GoogleExecutorTraits agent, GoogleNamedAccountCredentials credentials, ServiceClientProvider serviceClientProvider) {
     List<GoogleInstance> instances = new ArrayList<GoogleInstance>()
     String pageToken = null
 
@@ -2261,7 +2262,7 @@ class GCEUtil {
         "compute.instances.aggregatedList",
         agent.TAG_SCOPE, agent.SCOPE_GLOBAL)
 
-      instances += transformInstances(instanceAggregatedList, credentials)
+      instances += transformInstances(instanceAggregatedList, credentials, serviceClientProvider)
       pageToken = instanceAggregatedList.getNextPageToken()
 
       if (!pageToken) {
@@ -2272,12 +2273,12 @@ class GCEUtil {
     return instances
   }
 
-  private static List<GoogleInstance> transformInstances(InstanceAggregatedList instanceAggregatedList, GoogleNamedAccountCredentials credentials) throws IOException {
+  private static List<GoogleInstance> transformInstances(InstanceAggregatedList instanceAggregatedList, GoogleNamedAccountCredentials credentials, ServiceClientProvider serviceClientProvider) throws IOException {
     List<GoogleInstance> instances = []
 
     instanceAggregatedList?.items?.each { String zone, InstancesScopedList instancesScopedList ->
       instancesScopedList?.instances?.each { Instance instance ->
-        instances << GoogleInstances.createFromComputeInstance(instance, credentials)
+        instances << GoogleInstances.createFromComputeInstance(instance, credentials, serviceClientProvider)
       }
     }
 

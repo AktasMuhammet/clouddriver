@@ -196,7 +196,7 @@ public class ProviderHelpers {
               new AmazonCloudFormationCachingAgent(
                   amazonClientProvider, credentials, region.getName(), registry));
         }
-        if (credentials.getEddaEnabled()
+        if (credentials.isEddaEnabled()
             && !eddaTimeoutConfig.getDisabledRegions().contains(region.getName())) {
           newlyAddedAgents.add(
               new EddaLoadBalancerCachingAgent(
@@ -250,7 +250,8 @@ public class ProviderHelpers {
             new CleanupAlarmsAgent(
                 amazonClientProvider,
                 credentialsRepository,
-                awsConfigurationProperties.getCleanup().getAlarms().getDaysToKeep()));
+                awsConfigurationProperties.getCleanup().getAlarms().getDaysToKeep(),
+                awsConfigurationProperties.getCleanup().getAlarms().getAlarmsNamePattern()));
       }
       newlyAddedAgents.add(
           new CleanupDetachedInstancesAgent(amazonClientProvider, credentialsRepository));

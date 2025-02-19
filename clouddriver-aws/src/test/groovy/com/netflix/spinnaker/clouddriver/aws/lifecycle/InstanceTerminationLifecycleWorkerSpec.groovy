@@ -29,10 +29,9 @@ import com.netflix.spinnaker.clouddriver.aws.security.NetflixAmazonCredentials
 import com.netflix.spinnaker.clouddriver.eureka.api.Eureka
 import com.netflix.spinnaker.clouddriver.eureka.deploy.ops.AbstractEurekaSupport.DiscoveryStatus
 import com.netflix.spinnaker.credentials.CredentialsRepository
-import retrofit.RetrofitError
-import retrofit.RetrofitError.Kind
-import retrofit.client.Response
-import retrofit.converter.Converter
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException
+import okhttp3.Request
+import retrofit2.mock.Calls
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -136,7 +135,7 @@ class InstanceTerminationLifecycleWorkerSpec extends Specification {
     1 * credentialsRepository.getAll() >> [mgmtCredentials, testCredentials]
     1 * awsEurekaSupportProvider.get() >> awsEurekaSupport
     1 * awsEurekaSupport.getEureka(_, 'us-west-2') >> eureka
-    1 * eureka.updateInstanceStatus('clouddriver', 'i-1234', DiscoveryStatus.OUT_OF_SERVICE.value)
+    1 * eureka.updateInstanceStatus('clouddriver', 'i-1234', DiscoveryStatus.OUT_OF_SERVICE.value) >> Calls.response(null)
   }
 
   def 'should process both sns and sqs messages'() {
@@ -213,8 +212,7 @@ class InstanceTerminationLifecycleWorkerSpec extends Specification {
 
     then:
     1 * eureka.updateInstanceStatus(_, _, _) >> {
-      throw new RetrofitError("cannot connect", "http://discovery", new Response("http://discovery", 400, "reason", [], null), Mock(Converter), String, Kind.NETWORK, Mock(Throwable))
-    }
+      throw new SpinnakerNetworkException(new IOException("timeout"), new Request.Builder().url("http://some-url").build())    }
     1 * eureka.updateInstanceStatus(_, _, _)
     0 * eureka.updateInstanceStatus(_, _, _)
   }

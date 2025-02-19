@@ -73,6 +73,7 @@ import com.netflix.spinnaker.clouddriver.google.model.GoogleInstance;
 import com.netflix.spinnaker.clouddriver.google.model.GoogleServerGroup;
 import com.netflix.spinnaker.clouddriver.google.model.health.GoogleInstanceHealth;
 import com.netflix.spinnaker.clouddriver.google.security.GoogleNamedAccountCredentials;
+import com.netflix.spinnaker.kork.client.ServiceClientProvider;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
@@ -83,6 +84,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class AbstractGoogleServerGroupCachingAgentTest {
 
@@ -92,6 +94,8 @@ class AbstractGoogleServerGroupCachingAgentTest {
   private static final String REGION_URL = "http://compute/regions/" + REGION;
   private static final String ZONE = REGION + "-myzone";
   private static final String ZONE_URL = "http://compute/zones/" + ZONE;
+
+  @Mock private static ServiceClientProvider serviceClientProvider;
 
   private ObjectMapper objectMapper;
 
@@ -787,9 +791,10 @@ class AbstractGoogleServerGroupCachingAgentTest {
       assertThat(convertedCustomMetric.getMetric()).isEqualTo(inputCustomMetric.getMetric());
       assertThat(convertedCustomMetric.getUtilizationTarget())
           .isEqualTo(inputCustomMetric.getUtilizationTarget());
-      assertThat(convertedCustomMetric.getUtilizationTargetType())
-          .extracting(
-              enumValue -> Optional.ofNullable(enumValue).map(Object::toString).orElse(null))
+      assertThat(
+              Optional.ofNullable(convertedCustomMetric.getUtilizationTargetType())
+                  .map(Object::toString)
+                  .orElse(null))
           .isEqualTo(inputCustomMetric.getUtilizationTargetType());
     }
   }
@@ -961,7 +966,13 @@ class AbstractGoogleServerGroupCachingAgentTest {
         GoogleComputeApiFactory computeApiFactory,
         Collection<InstanceGroupManager> instanceGroupManagers,
         Collection<Autoscaler> autoscalers) {
-      super(credentials, computeApiFactory, new DefaultRegistry(), REGION, new ObjectMapper());
+      super(
+          credentials,
+          computeApiFactory,
+          new DefaultRegistry(),
+          REGION,
+          new ObjectMapper(),
+          serviceClientProvider);
       this.instanceGroupManagers = instanceGroupManagers;
       this.autoscalers = autoscalers;
     }

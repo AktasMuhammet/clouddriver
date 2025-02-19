@@ -29,10 +29,12 @@ import com.netflix.spinnaker.clouddriver.aws.deploy.ops.discovery.AwsEurekaSuppo
 import com.netflix.spinnaker.clouddriver.aws.model.AutoScalingProcessType
 import com.netflix.spinnaker.clouddriver.data.task.DefaultTaskStatus
 import com.netflix.spinnaker.clouddriver.data.task.TaskState
-import com.netflix.spinnaker.clouddriver.eureka.model.EurekaApplication
-import com.netflix.spinnaker.clouddriver.eureka.model.EurekaInstance
-import retrofit.RetrofitError
-import retrofit.client.Response
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
+import okhttp3.MediaType
+import okhttp3.ResponseBody
+import retrofit2.Retrofit
+import retrofit2.converter.jackson.JacksonConverterFactory
+import retrofit2.mock.Calls
 import spock.lang.Unroll
 
 class DisableAsgAtomicOperationUnitSpec extends EnableDisableAtomicOperationUnitSpecSupport {
@@ -91,12 +93,12 @@ class DisableAsgAtomicOperationUnitSpec extends EnableDisableAtomicOperationUnit
       throw new LoadBalancerNotFoundException("Does not exist")
     }
     1 * eureka.getInstanceInfo('i1') >>
-      [
+      Calls.response([
         instance: [
           app: "asg1"
         ]
-      ]
-    1 * eureka.updateInstanceStatus('asg1', 'i1', 'OUT_OF_SERVICE') >> new Response('http://foo', 200, 'OK', [], null)
+      ])
+    1 * eureka.updateInstanceStatus('asg1', 'i1', 'OUT_OF_SERVICE') >> Calls.response(null)
     2 * task.getStatus() >> new DefaultTaskStatus(TaskState.STARTED)
     0 * task.fail()
   }
@@ -117,12 +119,12 @@ class DisableAsgAtomicOperationUnitSpec extends EnableDisableAtomicOperationUnit
     2 * task.getStatus() >> new DefaultTaskStatus(TaskState.STARTED)
     1 * asgService.getAutoScalingGroup(_) >> asg
     1 * eureka.getInstanceInfo('i1') >>
-      [
+      Calls.response([
         instance: [
           app: "asg1"
         ]
-      ]
-    1 * eureka.updateInstanceStatus('asg1', 'i1', 'OUT_OF_SERVICE') >> new Response('http://foo', 200, 'OK', [], null)
+      ])
+    1 * eureka.updateInstanceStatus('asg1', 'i1', 'OUT_OF_SERVICE') >> Calls.response(null)
   }
 
   def 'should not fail because of discovery errors on disable'() {
@@ -134,9 +136,7 @@ class DisableAsgAtomicOperationUnitSpec extends EnableDisableAtomicOperationUnit
     describeInstanceResult.getReservations() >> [new Reservation().withInstances(instance)]
 
     eureka.updateInstanceStatus('asg1', 'i1', 'OUT_OF_SERVICE') >> {
-      throw new RetrofitError("error", "url",
-        new Response("url", 503, "service unavailable", [], null),
-        null, null, null, null)
+      throw makeSpinnakerHttpException(503)
     }
 
     when:
@@ -147,11 +147,11 @@ class DisableAsgAtomicOperationUnitSpec extends EnableDisableAtomicOperationUnit
     _ * task.getStatus() >> new DefaultTaskStatus(TaskState.STARTED)
     _ * asgService.getAutoScalingGroup(_) >> asg
     _ * eureka.getInstanceInfo('i1') >>
-      [
+      Calls.response([
         instance: [
           app: "asg1"
         ]
-      ]
+      ])
     0 * task.fail()
   }
 
@@ -249,6 +249,23 @@ class DisableAsgAtomicOperationUnitSpec extends EnableDisableAtomicOperationUnit
     0                 || 0
     50                || 0
     99                || 0
+  }
+
+  private static SpinnakerHttpException makeSpinnakerHttpException(int status) {
+    String url = "https://some-url";
+    retrofit2.Response retrofit2Response =
+      retrofit2.Response.error(
+        status,
+        ResponseBody.create(
+          MediaType.parse("application/json"), "{ \"message\": \"arbitrary message\" }"));
+
+    Retrofit retrofit =
+      new Retrofit.Builder()
+        .baseUrl(url)
+        .addConverterFactory(JacksonConverterFactory.create())
+        .build();
+
+    return new SpinnakerHttpException(retrofit2Response, retrofit);
   }
 
 }

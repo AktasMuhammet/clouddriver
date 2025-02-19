@@ -16,27 +16,24 @@
 
 package com.netflix.spinnaker.clouddriver.eureka.api
 
-import com.netflix.spinnaker.config.OkHttpClientConfiguration
-import retrofit.RestAdapter
-import retrofit.client.OkClient
-import retrofit.converter.Converter
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.config.DefaultServiceEndpoint
+import com.netflix.spinnaker.kork.client.ServiceClientProvider
+import com.netflix.spinnaker.okhttp.SpinnakerRequestHeaderInterceptor
 
 class EurekaApiFactory {
 
-  private Converter eurekaConverter
-  private OkHttpClientConfiguration okHttpClientConfiguration
+  private ServiceClientProvider serviceClientProvider
+  private ObjectMapper objectMapper
+  private SpinnakerRequestHeaderInterceptor spinnakerRequestHeaderInterceptor
 
-  EurekaApiFactory(Converter eurekaConverter, OkHttpClientConfiguration okHttpClientConfiguration) {
-    this.eurekaConverter = eurekaConverter
-    this.okHttpClientConfiguration = okHttpClientConfiguration
+  EurekaApiFactory(ServiceClientProvider serviceClientProvider, ObjectMapper objectMapper, SpinnakerRequestHeaderInterceptor spinnakerRequestHeaderInterceptor) {
+    this.serviceClientProvider = serviceClientProvider
+    this.objectMapper = objectMapper
+    this.spinnakerRequestHeaderInterceptor = spinnakerRequestHeaderInterceptor
   }
 
   public EurekaApi createApi(String endpoint) {
-    new RestAdapter.Builder()
-      .setConverter(eurekaConverter)
-      .setClient(new OkClient(okHttpClientConfiguration.create()))
-      .setEndpoint(endpoint)
-      .build()
-      .create(EurekaApi)
+    serviceClientProvider.getService(EurekaApi, new DefaultServiceEndpoint("eurekaapi", endpoint), objectMapper, List.of(spinnakerRequestHeaderInterceptor))
   }
 }

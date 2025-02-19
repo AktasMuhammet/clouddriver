@@ -18,15 +18,10 @@ package com.netflix.spinnaker.clouddriver.consul.api.v1
 
 import com.netflix.spinnaker.clouddriver.consul.api.v1.services.KeyValueApi
 import com.netflix.spinnaker.clouddriver.consul.config.ConsulConfig
-import com.netflix.spinnaker.clouddriver.consul.config.ConsulProperties
-import com.squareup.okhttp.OkHttpClient
-import retrofit.RestAdapter
-import retrofit.client.OkClient
-
-import java.util.concurrent.TimeUnit
+import com.netflix.spinnaker.kork.client.ServiceClientProvider
 
 class ConsulKeyValueStore extends Consul<KeyValueApi> {
-  ConsulKeyValueStore(ConsulConfig config) {
-    super(config, KeyValueApi)
+  ConsulKeyValueStore(ConsulConfig config, ServiceClientProvider serviceClientProvider) {
+    super(config, KeyValueApi, serviceClientProvider)
   }
 }

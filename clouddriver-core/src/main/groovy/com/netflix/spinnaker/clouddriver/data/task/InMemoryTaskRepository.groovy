@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.clouddriver.data.task
 
+import com.netflix.spinnaker.clouddriver.core.ClouddriverHostname
+
 import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryTaskRepository implements TaskRepository {
@@ -51,7 +53,7 @@ class InMemoryTaskRepository implements TaskRepository {
   List<Task> list() {
     List<Task> tasks = new ArrayList<>();
     for (Task value : repository.values()) {
-      if (!value.getStatus().completed) {
+      if (!value.getStatus().isCompleted()) {
         tasks.add(value)
       }
     }
@@ -60,12 +62,12 @@ class InMemoryTaskRepository implements TaskRepository {
 
   @Override
   List<Task> listByThisInstance() {
-    return list()
+    return list().findAll { it.ownerId == ClouddriverHostname.ID }
   }
 
   private String getNextId() {
     while (true) {
-      def maybeNext = new BigInteger(new Random().nextInt(Integer.MAX_VALUE)).toString(36)
+      def maybeNext = BigInteger.valueOf(new Random().nextInt(Integer.MAX_VALUE)).toString(36)
       if (!repository.containsKey(maybeNext)) {
         return maybeNext
       }
