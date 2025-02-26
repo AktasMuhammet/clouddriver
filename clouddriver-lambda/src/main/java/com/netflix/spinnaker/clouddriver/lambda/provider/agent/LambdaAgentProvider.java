@@ -25,7 +25,7 @@ import com.netflix.spinnaker.clouddriver.aws.security.AmazonClientProvider;
 import com.netflix.spinnaker.clouddriver.aws.security.AmazonCredentials;
 import com.netflix.spinnaker.clouddriver.aws.security.NetflixAmazonCredentials;
 import com.netflix.spinnaker.clouddriver.core.limits.ServiceLimitConfiguration;
-import com.netflix.spinnaker.clouddriver.lambda.service.config.LambdaServiceConfig;
+import com.netflix.spinnaker.config.LambdaServiceConfig;
 import com.netflix.spinnaker.credentials.Credentials;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,7 +60,7 @@ public class LambdaAgentProvider implements AgentProvider {
   public Collection<Agent> agents(Credentials credentials) {
     List<Agent> agents = new ArrayList<>();
     NetflixAmazonCredentials netflixAmazonCredentials = (NetflixAmazonCredentials) credentials;
-    if (netflixAmazonCredentials.getLambdaEnabled()) {
+    if (netflixAmazonCredentials.isLambdaEnabled()) {
       agents.add(
           new IamRoleCachingAgent(objectMapper, netflixAmazonCredentials, amazonClientProvider));
 

@@ -16,10 +16,6 @@ dependencies {
   implementation project(":clouddriver-saga")
   implementation project(":clouddriver-security")
 
-  annotationProcessor "org.projectlombok:lombok"
-  compileOnly "org.projectlombok:lombok"
-  testAnnotationProcessor "org.projectlombok:lombok"
-
   implementation "javax.inject:javax.inject:1"
   implementation "com.amazonaws:aws-java-sdk"
   implementation "com.google.protobuf:protobuf-java"
@@ -33,12 +29,14 @@ dependencies {
   implementation "io.spinnaker.kork:kork-exceptions"
   implementation "io.spinnaker.kork:kork-security"
   implementation "io.spinnaker.kork:kork-moniker"
+  implementation "io.spinnaker.kork:kork-retrofit"
+  implementation "io.spinnaker.kork:kork-web"
   implementation "com.squareup.okhttp3:okhttp:3.1.2"
   implementation "io.grpc:grpc-netty-shaded:$grpcVersion"
   implementation "io.grpc:grpc-protobuf:$grpcVersion"
   implementation "io.grpc:grpc-stub:$grpcVersion"
-  implementation "org.codehaus.groovy:groovy"
-  implementation "org.codehaus.groovy:groovy-json"
+  implementation "org.apache.groovy:groovy"
+  implementation "org.apache.groovy:groovy-json"
   implementation "org.slf4j:slf4j-api"
   implementation "org.springframework.boot:spring-boot-actuator"
   implementation "org.springframework.boot:spring-boot-starter-web"
@@ -53,6 +51,7 @@ dependencies {
   testImplementation "org.spockframework:spock-spring"
   testImplementation "org.springframework:spring-test"
   testImplementation "io.spinnaker.kork:kork-test"
+  testRuntimeOnly "net.bytebuddy:byte-buddy"
 }
 
 sourceSets {
